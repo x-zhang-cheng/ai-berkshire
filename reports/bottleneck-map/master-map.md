@@ -2289,3 +2289,52 @@ PE 127.8x，GF内在价值391%溢价，10年退出需CAGR 30%。SiPho A级瓶颈
 | 国防现代化 | 西方钨供应、弹药供应链 | 固体火箭推进剂 | ALM ★★★★ / CHG.L ★★★★ |
 | 半导体再工业化 | 溴化物（ICL） | 特气（已归入AI列） | ICL ★★★★★ |
 | 太空经济 | 无追踪 | — | — |
+
+
+---
+
+### 状态更新（2026-06-12 20:05）
+
+**本轮新增：Tower Semiconductor (TSEM) 首次进入系统 + 氦气短缺更新**
+
+#### 新进入系统：Tower Semiconductor (TSEM) — SiPho晶圆代工 Layer 2
+
+**估值监控候选（非正式watchlist成员）**
+
+| 维度 | 数据 |
+|------|------|
+| 触发信号 | 2026-05-13：$1.3B SiPho合同锁定2027年收入 + $290M客户预付款锁定2028产能 |
+| 瓶颈评级 | A级：SiPho晶圆代工全球主导（70%+产能合同预订），扩产周期>12个月 |
+| 市值 | $27.1B（2026-06-10，股价$258.34） |
+| TTM PS / PE | PS 16.4x / PE 108x（黄灯） |
+| 前向PE（2028） | 36x（黄灯边界，基于$750M指引） |
+| **红灯条件** | **市值$27.1B >> SiPho代工年TAM($2-4B)×20%=$400-800M → 条件1触发** |
+| 10年25xPE检验 | 乐观（20%增速）~11.5%（勉强过）；中性（15%增速）~7.8%（不过）。无明确安全边际 |
+| 信号强度 | ★★（红灯上限） |
+| 评级行动 | 加入"估值监控候选"，非正式watchlist成员。门槛：市值回撤至$10-12B（前向PS<6x）时重新评估 |
+
+来源：[Tower Semiconductor IR](https://ir.towersemi.com/news-releases/news-release-details/tower-semiconductor-signs-customer-contracts-13-billion-silicon) / [StockTitan TSEM](https://www.stocktitan.net/sec-filings/TSEM/6-k-tower-semiconductor-ltd-current-report-foreign-issuer-497b8af5cee6.html)
+
+#### 氦气短缺：B级信号更新（已在18:04版记录，本轮交叉验证补充）
+
+- [Tom's Hardware](https://www.tomshardware.com/tech-industry/semiconductors/the-global-helium-shortage-is-a-direct-threat-to-chipmaking)确认：EUV机台散热无替代品，氦气是唯一选择
+- 韩国65%、台湾69%氦气来自卡塔尔/GCC，Ras Laffan打击移除全球~30%供应
+- 纯正氦气股（TSXV）已上涨300%+，无法通过流动性+阶段+规格三道门槛
+- **维持B级，无可投资标的**；氦气供应压力持续放大Layer 1-2产能瓶颈
+
+#### ICL Q1 2026业绩补录
+
+- Q1 2026：销售额+14% YoY至$2B，调整后EBITDA+15%至$4.12亿
+- FY2026 EBITDA指引上调$1亿至$1.5-1.7B
+- 溴化物"自2022年末以来最强季度"，验证ICL双垄断定价权
+- **ICL评级维持★★★★★（17:05升级）**
+
+#### WF6停产三方再确认（2026-06-12 20:05版）
+
+[The Elec](https://www.thelec.net/news/articleView.html?idxno=6325) / [wccftech](https://wccftech.com/japan-semiconductor-gas-production-collapses-to-zero-after-china-cuts-off-tungsten-tsmc-sk-hynix-samsung/) / [SunSirs](https://www.sunsirs.com/commodity-news/petail-33539.html)三方确认：
+- Central Glass 7/1永久停产，与Kanto Denka同步通知Samsung/SK Hynix/TSMC
+- Samsung比SK Hynix更暴露（SK有内部气体子公司SK特殊气体）
+- 日本WF₆约占全球产能25%，将于7/1归零
+- 存货仅支撑至6月底
+- **4047.T评级维持★★★★★**
+
