@@ -72,14 +72,14 @@ def fetch_ohlcv(ticker, rng="2y", interval="1d"):
 # ============================================================
 
 def sma(vals, n):
-    out = [None] * len(vals)
+    out: list = [None] * len(vals)
     for i in range(n - 1, len(vals)):
         out[i] = sum(vals[i - n + 1:i + 1]) / n
     return out
 
 
 def ema(vals, n):
-    out = [None] * len(vals)
+    out: list = [None] * len(vals)
     if len(vals) < n:
         return out
     k = 2 / (n + 1)
@@ -97,7 +97,7 @@ def stddev_pop(vals):
 
 def rsi(closes, n=14):
     """Wilder 平滑 RSI。"""
-    out = [None] * len(closes)
+    out: list = [None] * len(closes)
     if len(closes) <= n:
         return out
     gains, losses = [], []
@@ -123,19 +123,19 @@ def rsi(closes, n=14):
 def macd(closes, fast=12, slow=26, sig=9):
     """返回 (dif, dea, hist)。dif=EMA快-EMA慢；dea=dif的EMA；hist=dif-dea。"""
     ef, es = ema(closes, fast), ema(closes, slow)
-    dif = [None] * len(closes)
+    dif: list = [None] * len(closes)
     for i in range(len(closes)):
         if ef[i] is not None and es[i] is not None:
             dif[i] = ef[i] - es[i]
     valid = [x for x in dif if x is not None]
     dea_valid = ema(valid, sig)
-    dea = [None] * len(closes)
+    dea: list = [None] * len(closes)
     j = 0
     for i in range(len(closes)):
         if dif[i] is not None:
             dea[i] = dea_valid[j]
             j += 1
-    hist = [None] * len(closes)
+    hist: list = [None] * len(closes)
     for i in range(len(closes)):
         if dif[i] is not None and dea[i] is not None:
             hist[i] = dif[i] - dea[i]
@@ -144,9 +144,9 @@ def macd(closes, fast=12, slow=26, sig=9):
 
 def kdj(highs, lows, closes, n=9, k_s=3, d_s=3):
     """返回 (K, D, J)。RSV 用 n 日高低，K/D 用 1/3 平滑（A股常用参数）。"""
-    K = [None] * len(closes)
-    D = [None] * len(closes)
-    J = [None] * len(closes)
+    K: list = [None] * len(closes)
+    D: list = [None] * len(closes)
+    J: list = [None] * len(closes)
     prev_k, prev_d = 50.0, 50.0
     for i in range(len(closes)):
         if i < n - 1:
@@ -163,8 +163,8 @@ def kdj(highs, lows, closes, n=9, k_s=3, d_s=3):
 
 def bollinger(closes, n=20, mult=2):
     mid = sma(closes, n)
-    up = [None] * len(closes)
-    lo = [None] * len(closes)
+    up: list = [None] * len(closes)
+    lo: list = [None] * len(closes)
     for i in range(n - 1, len(closes)):
         sd = stddev_pop(closes[i - n + 1:i + 1])
         up[i] = mid[i] + mult * sd
@@ -174,8 +174,8 @@ def bollinger(closes, n=20, mult=2):
 
 def atr(highs, lows, closes, n=14):
     """Wilder ATR。"""
-    out = [None] * len(closes)
-    tr = [None] * len(closes)
+    out: list = [None] * len(closes)
+    tr: list = [None] * len(closes)
     for i in range(1, len(closes)):
         tr[i] = max(highs[i] - lows[i],
                     abs(highs[i] - closes[i - 1]),
@@ -212,6 +212,118 @@ def swing_points(highs, lows, w=3):
     return sh, sl
 
 
+def adx(highs, lows, closes, n=14):
+    """Wilder ADX + 方向指标。返回 (adx, +DI, -DI)。
+    ADX<20 震荡无趋势 | 20-25 萌芽 | 25-40 趋势成立 | >40 强趋势。+DI>-DI 多头方向。"""
+    length = len(closes)
+    adx_s: list = [None] * length
+    pdi_s: list = [None] * length
+    mdi_s: list = [None] * length
+    if length <= 2 * n:
+        return adx_s, pdi_s, mdi_s
+    tr = [0.0] * length
+    pdm = [0.0] * length
+    mdm = [0.0] * length
+    for i in range(1, length):
+        up = highs[i] - highs[i - 1]
+        dn = lows[i - 1] - lows[i]
+        pdm[i] = up if (up > dn and up > 0) else 0.0
+        mdm[i] = dn if (dn > up and dn > 0) else 0.0
+        tr[i] = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
+    atr_w = sum(tr[1:n + 1])
+    pdm_w = sum(pdm[1:n + 1])
+    mdm_w = sum(mdm[1:n + 1])
+    dx_list = []  # (索引, DX)
+
+    def push(i):
+        if atr_w == 0:
+            return
+        pdi = 100 * pdm_w / atr_w
+        mdi = 100 * mdm_w / atr_w
+        pdi_s[i] = pdi
+        mdi_s[i] = mdi
+        denom = pdi + mdi
+        dx_list.append((i, 100 * abs(pdi - mdi) / denom if denom else 0.0))
+
+    push(n)
+    for i in range(n + 1, length):
+        atr_w = atr_w - atr_w / n + tr[i]
+        pdm_w = pdm_w - pdm_w / n + pdm[i]
+        mdm_w = mdm_w - mdm_w / n + mdm[i]
+        push(i)
+    if len(dx_list) >= n:
+        prev = sum(d for _, d in dx_list[:n]) / n
+        adx_s[dx_list[n - 1][0]] = prev
+        for k in range(n, len(dx_list)):
+            prev = (prev * (n - 1) + dx_list[k][1]) / n
+            adx_s[dx_list[k][0]] = prev
+    return adx_s, pdi_s, mdi_s
+
+
+def _near_round(price):
+    """价格是否贴近整数心理关口（误差<1%）。返回该关口或 None。"""
+    if price <= 0:
+        return None
+    step = 10 ** (len(str(int(price))) - 1) / 2  # 半量级：7118→500（7000/7500），4.3→0.5
+    if step <= 0:
+        return None
+    nearest = round(price / step) * step
+    return round(nearest, 2) if abs(price - nearest) / price < 0.01 else None
+
+
+def sr_zones(highs, lows, vols, price, n, lookback=120, w=3, merge_pct=0.018):
+    """摆动点聚类成支撑/阻力【区间】，按 触碰次数 + 新鲜度 + 成交量 打强度分（★1-5）。
+    返回 list[dict]，每个含 low/high/center/touches/last_idx/recency/vol_x/stars/round。"""
+    start = max(w, n - lookback)
+    win = vols[start:] or vols
+    med_vol = sorted(win)[len(win) // 2] if win else 1.0
+    pivots = []  # (价位, 索引, 成交量)
+    for i in range(start, n - w):
+        if highs[i] == max(highs[i - w:i + w + 1]):
+            pivots.append((highs[i], i, vols[i]))
+        if lows[i] == min(lows[i - w:i + w + 1]):
+            pivots.append((lows[i], i, vols[i]))
+    if not pivots:
+        return []
+    pivots.sort()
+    # 相邻价差 ≤ merge_pct 则并入同一区间
+    clusters = [[pivots[0]]]
+    for p in pivots[1:]:
+        if (p[0] - clusters[-1][-1][0]) / clusters[-1][-1][0] <= merge_pct:
+            clusters[-1].append(p)
+        else:
+            clusters.append([p])
+    zones = []
+    for cl in clusters:
+        prices = [c[0] for c in cl]
+        idxs = [c[1] for c in cl]
+        zv = [c[2] for c in cl]
+        wsum = sum(zv)
+        center = sum(p * v for p, v in zip(prices, zv)) / wsum if wsum else sum(prices) / len(prices)
+        touches = len(cl)
+        last_idx = max(idxs)
+        recency = (last_idx - start) / max(1, n - 1 - start)        # 0..1 越新越大
+        vol_x = (wsum / len(zv)) / med_vol if med_vol else 1.0       # 相对中位量
+        score = touches * 1.0 + recency * 1.2 + min(vol_x, 2.0) * 0.8
+        zones.append({
+            "low": round(min(prices), 2), "high": round(max(prices), 2), "center": round(center, 2),
+            "touches": touches, "last_idx": last_idx, "recency": round(recency, 2),
+            "vol_x": round(vol_x, 2), "stars": max(1, min(5, round(score))),
+            "round": _near_round(center),
+        })
+    return zones
+
+
+def _zone_brief(z, price):
+    """把区间整理成卡片友好的简报。"""
+    return {
+        "range": f"{z['low']}–{z['high']}", "center": z["center"],
+        "dist_pct": round((z["center"] - price) / price * 100, 1),
+        "stars": z["stars"], "touches": z["touches"],
+        "last_date": z.get("last_date", ""), "vol_x": z["vol_x"], "round": z["round"],
+    }
+
+
 # ============================================================
 # 分析主逻辑
 # ============================================================
@@ -238,6 +350,7 @@ def analyze_ticker(ticker, rng="2y"):
     bu, bm, bl = bollinger(closes)
     a = atr(highs, lows, closes)
     ob = obv(closes, vols)
+    adx_s, pdi_s, mdi_s = adx(highs, lows, closes)
 
     def v(series):  # 取末值，保留 None
         return series[last]
@@ -266,12 +379,15 @@ def analyze_ticker(ticker, rng="2y"):
             return (price - closes[-days - 1]) / closes[-days - 1] * 100
         return None
 
-    # 支撑/阻力（最近摆动点）
+    # 支撑/阻力（摆动点聚类成区间 + 强度评分）
     sh, sl = swing_points(highs, lows, w=3)
-    recent_sh = [highs[i] for i in sh if i > n - 120]
-    recent_sl = [lows[i] for i in sl if i > n - 120]
-    resistance = min([h for h in recent_sh if h > price], default=hi60)
-    support = max([l for l in recent_sl if l < price], default=lo60)
+    zones = sr_zones(highs, lows, vols, price, n)
+    for z in zones:  # 附上最后触碰日期，便于阅读
+        z["last_date"] = rows[z["last_idx"]]["date"]
+    res_zones = sorted([z for z in zones if z["center"] > price], key=lambda z: z["center"])
+    sup_zones = sorted([z for z in zones if z["center"] < price], key=lambda z: z["center"], reverse=True)
+    resistance = res_zones[0]["center"] if res_zones else hi60
+    support = sup_zones[0]["center"] if sup_zones else lo60
 
     # OBV 趋势（近20日斜率符号）
     obv_trend = "上升" if n > 20 and ob[last] > ob[-21] else ("下降" if n > 20 and ob[last] < ob[-21] else "走平")
@@ -307,11 +423,34 @@ def analyze_ticker(ticker, rng="2y"):
         else:
             flag("均线排列", "缠绕（无明确排列）", "neutral", "震荡或转折")
     if mvals[20]:
+        slope = ""
+        if n > 6 and ma[20][-6] is not None:
+            slope = "，MA20上行" if mvals[20] > ma[20][-6] else "，MA20下行"
         flag("价 vs MA20", f"{'上方' if price > mvals[20] else '下方'} (MA20={mvals[20]:.2f})",
-             "bull" if price > mvals[20] else "bear", "中期趋势")
+             "bull" if price > mvals[20] else "bear", "中期趋势" + slope)
     if mvals[200]:
         flag("价 vs MA200", f"{'上方' if price > mvals[200] else '下方'} (MA200={mvals[200]:.2f})",
              "bull" if price > mvals[200] else "bear", "牛熊分界")
+
+    # ADX 趋势强度（决定趋势类信号 vs 均值回归信号谁更可信）
+    adx_v, pdi_v, mdi_v = v(adx_s), v(pdi_s), v(mdi_s)
+    regime = "数据不足"
+    if adx_v is not None:
+        if adx_v >= 40:
+            regime = "强趋势"
+        elif adx_v >= 25:
+            regime = "趋势成立"
+        elif adx_v >= 20:
+            regime = "趋势萌芽"
+        else:
+            regime = "震荡无趋势"
+        di_dir = "多头" if (pdi_v or 0) >= (mdi_v or 0) else "空头"
+        if adx_v >= 25:
+            flag("ADX趋势", f"ADX={adx_v:.0f} {regime}（{di_dir}，+DI={pdi_v:.0f}/-DI={mdi_v:.0f}）",
+                 "bull" if di_dir == "多头" else "bear", "趋势明确，趋势类信号可顺势跟随")
+        else:
+            flag("ADX趋势", f"ADX={adx_v:.0f} {regime}",
+                 "neutral", "无趋势/震荡，趋势类信号降权，均值回归(RSI/KDJ/布林)更可靠")
 
     # RSI
     rv = v(r)
@@ -360,6 +499,15 @@ def analyze_ticker(ticker, rng="2y"):
             flag("布林带", f"触/破下轨 (位置 {pos*100:.0f}%)", "bull", "超卖区，警惕反弹")
         else:
             flag("布林带", f"带内 (位置 {pos*100:.0f}%, 中轨 {v(bm):.2f})", "neutral")
+
+    # 布林带挤压（带宽处于历史低位 → 低波动收敛，变盘前兆）
+    bw = [((bu[i] - bl[i]) / bm[i]) if (bu[i] is not None and bm[i]) else None for i in range(n)]
+    bw_recent = [x for x in bw[-120:] if x is not None]
+    if bw[last] is not None and len(bw_recent) > 20:
+        rank = sum(1 for x in bw_recent if x < bw[last]) / len(bw_recent)
+        if rank <= 0.20:
+            flag("布林挤压", f"带宽处近120日 {rank*100:.0f}% 分位（低波动收敛）",
+                 "neutral", "变盘前兆，方向待定，等放量突破再跟")
 
     # 量价
     if vol_ratio > 1.5:
@@ -448,6 +596,10 @@ def analyze_ticker(ticker, rng="2y"):
         "high_60d": round(hi60, 2), "low_60d": round(lo60, 2),
         "pct_from_high60": round(pct_from_hi60, 1),
         "support": round(support, 2), "resistance": round(resistance, 2),
+        "support_zones": [_zone_brief(z, price) for z in sup_zones[:3]],
+        "resistance_zones": [_zone_brief(z, price) for z in res_zones[:3]],
+        "regime": regime,
+        "adx": round(adx_v, 1) if adx_v is not None else None,
         "divergence": divergence,
         "flags": flags,
         "tally": {"bull": bull, "bear": bear, "net": net},
@@ -591,9 +743,19 @@ def print_analysis(d):
     print(f"{'='*60}")
     c = d["changes"]
     print(f"  涨跌幅: 1日 {fmt_pct(c['1d'])} | 5日 {fmt_pct(c['5d'])} | 20日 {fmt_pct(c['20d'])} | 60日 {fmt_pct(c['60d'])}")
-    print(f"  ATR(14): {d['atr']} ({d['atr_pct']}%日波动) | 量比: {d['vol_ratio']}")
+    print(f"  ATR(14): {d['atr']} ({d['atr_pct']}%日波动) | 量比: {d['vol_ratio']} | 市况: {d.get('regime','?')}(ADX {d.get('adx','?')})")
     print(f"  60日高/低: {d['high_60d']} / {d['low_60d']} (距高点 {d['pct_from_high60']}%)")
-    print(f"  支撑/阻力: {d['support']} / {d['resistance']}")
+
+    def zline(z):
+        rd = f" ≈整数{z['round']}" if z.get("round") else ""
+        return (f"{z['range']} (中{z['center']}, {z['dist_pct']:+}%) "
+                f"{'★'*z['stars']} 碰{z['touches']}次 量{z['vol_x']}x 末次{z['last_date']}{rd}")
+    print(f"  阻力区(由近及远):")
+    for z in d.get("resistance_zones", []) or [{"range": "无", "center": "", "dist_pct": 0, "stars": 1, "touches": 0, "vol_x": 0, "last_date": ""}]:
+        print(f"    🔺 {zline(z) if z.get('touches') else '上方无明显摆动阻力，参考60日高 ' + str(d['high_60d'])}")
+    print(f"  支撑区(由近及远):")
+    for z in d.get("support_zones", []) or [{}]:
+        print(f"    🔻 {zline(z) if z.get('touches') else '下方无明显摆动支撑，参考60日低 ' + str(d['low_60d'])}")
     print(f"  背离: {d['divergence']}")
     print(f"\n  {'信号旗标':<10} {'取值':<40} 方向")
     print(f"  {'-'*58}")
